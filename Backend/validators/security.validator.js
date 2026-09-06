@@ -1,56 +1,78 @@
-export const validatePasswordStrength = (
-  req,
-  res,
-  next
-) => {
-  const { password } = req.body;
+import {
+  body,
+  validationResult,
+} from "express-validator";
 
-  if (!password) {
-    return res.status(400).json({
-      success: false,
-      message: "Password is required",
-    });
-  }
+import ApiError from "../utils/apiError.util.js";
 
-  if (password.length < 8) {
-    return res.status(400).json({
-      success: false,
-      message:
-        "Password must contain at least 8 characters",
-    });
-  }
 
-  if (!/[A-Z]/.test(password)) {
-    return res.status(400).json({
-      success: false,
-      message:
-        "Password must contain at least one uppercase letter",
-    });
-  }
+const handleValidation = (req, res, next) => {
+  const errors = validationResult(req);
 
-  if (!/[a-z]/.test(password)) {
-    return res.status(400).json({
-      success: false,
-      message:
-        "Password must contain at least one lowercase letter",
-    });
-  }
+  if (!errors.isEmpty()) {
+    const formattedErrors = errors.array().map((error) => ({
+      field: error.path,
+      message: error.msg,
+    }));
 
-  if (!/[0-9]/.test(password)) {
-    return res.status(400).json({
-      success: false,
-      message:
-        "Password must contain at least one number",
-    });
-  }
-
-  if (!/[^A-Za-z0-9]/.test(password)) {
-    return res.status(400).json({
-      success: false,
-      message:
-        "Password must contain at least one special character",
-    });
+    throw new ApiError(
+      400,
+      "Validation failed",
+      formattedErrors
+    );
   }
 
   next();
 };
+
+
+// ============================================
+// VERIFY CURRENT PASSWORD
+// ============================================
+
+export const validateCurrentPassword = [
+  body("password")
+    .notEmpty()
+    .withMessage("Password is required"),
+
+  handleValidation,
+];
+
+
+// ============================================
+// CHANGE PASSWORD
+// ============================================
+
+export const validateChangePassword = [
+  body("currentPassword")
+    .notEmpty()
+    .withMessage(
+      "Current password is required"
+    ),
+
+
+  body("newPassword")
+    .notEmpty()
+    .withMessage(
+      "New password is required"
+    )
+
+    .matches(/[a-z]/)
+    .withMessage(
+      "Password must contain at least one lowercase letter"
+    )
+
+    .matches(/[0-9]/)
+    .withMessage(
+      "Password must contain at least one number"
+    )
+
+    .matches(
+      /[!@#$%^&*(),.?":{}|<>_\-\\[\]/;'+=~`]/
+    )
+    .withMessage(
+      "Password must contain at least one special character"
+    ),
+
+  handleValidation,
+];

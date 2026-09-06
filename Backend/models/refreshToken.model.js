@@ -18,7 +18,6 @@ const refreshTokenSchema = new mongoose.Schema(
     expiresAt: {
       type: Date,
       required: true,
-      index: true,
     },
 
     revokedAt: {
@@ -33,7 +32,7 @@ const refreshTokenSchema = new mongoose.Schema(
 
     userAgent: {
       type: String,
-      default: "",
+      default: null,
       maxlength: 500,
     },
 

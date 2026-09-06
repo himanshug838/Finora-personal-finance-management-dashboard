@@ -1,12 +1,47 @@
+import ApiError from "../utils/apiError.util.js";
+
 const allowedPeriods = [
   "weekly",
   "monthly",
   "yearly",
 ];
 
+const isValidAmount = (value) => {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ""
+  ) {
+    return false;
+  }
+
+  const number = Number(value);
+
+  return (
+    Number.isFinite(number) &&
+    number > 0
+  );
+};
+
+const isValidDate = (value) => {
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(value)
+  ) {
+    return false;
+  }
+
+  const date = new Date(`${value}T00:00:00Z`);
+
+  return !Number.isNaN(date.getTime());
+};
+
+
+// ==========================================
+// CREATE BUDGET
+// ==========================================
 
 const validateBudget = (req, res, next) => {
-
   const {
     category,
     amount,
@@ -17,12 +52,16 @@ const validateBudget = (req, res, next) => {
 
   const errors = [];
 
-
   // Category
-  if (!category || category.trim().length === 0) {
-    errors.push("Budget category is required");
+  if (
+    typeof category !== "string" ||
+    category.trim().length === 0
+  ) {
+    errors.push({
+      field: "category",
+      message: "Budget category is required",
+    });
   }
-
 
   // Amount
   if (
@@ -30,82 +69,100 @@ const validateBudget = (req, res, next) => {
     amount === null ||
     amount === ""
   ) {
-    errors.push("Budget amount is required");
-  } else if (Number(amount) <= 0) {
-    errors.push(
-      "Budget amount must be greater than 0"
-    );
+    errors.push({
+      field: "amount",
+      message: "Budget amount is required",
+    });
+  } else if (!isValidAmount(amount)) {
+    errors.push({
+      field: "amount",
+      message:
+        "Budget amount must be greater than 0",
+    });
   }
-
 
   // Period
   if (
-    period &&
+    period !== undefined &&
     !allowedPeriods.includes(period)
   ) {
-    errors.push(
-      "Period must be weekly, monthly, or yearly"
-    );
+    errors.push({
+      field: "period",
+      message:
+        "Period must be weekly, monthly, or yearly",
+    });
   }
-
 
   // Start date
   if (!startDate) {
-    errors.push("Start date is required");
-  } else if (
-    isNaN(new Date(startDate).getTime())
-  ) {
-    errors.push("Invalid start date");
+    errors.push({
+      field: "startDate",
+      message: "Start date is required",
+    });
+  } else if (!isValidDate(startDate)) {
+    errors.push({
+      field: "startDate",
+      message:
+        "Invalid start date. Use YYYY-MM-DD format",
+    });
   }
-
 
   // End date
   if (!endDate) {
-    errors.push("End date is required");
-  } else if (
-    isNaN(new Date(endDate).getTime())
-  ) {
-    errors.push("Invalid end date");
+    errors.push({
+      field: "endDate",
+      message: "End date is required",
+    });
+  } else if (!isValidDate(endDate)) {
+    errors.push({
+      field: "endDate",
+      message:
+        "Invalid end date. Use YYYY-MM-DD format",
+    });
   }
-
 
   // Date comparison
   if (
     startDate &&
     endDate &&
-    !isNaN(new Date(startDate).getTime()) &&
-    !isNaN(new Date(endDate).getTime())
+    isValidDate(startDate) &&
+    isValidDate(endDate)
   ) {
-
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = new Date(`${startDate}T00:00:00Z`);
+    const end = new Date(`${endDate}T00:00:00Z`);
 
     if (end <= start) {
-      errors.push(
-        "End date must be after start date"
-      );
+      errors.push({
+        field: "endDate",
+        message:
+          "End date must be after start date",
+      });
     }
   }
 
-
   if (errors.length > 0) {
-    return res.status(400).json({
-      success: false,
-      message: errors.join(", "),
-    });
+    return next(
+      new ApiError(
+        400,
+        "Budget validation failed",
+        errors
+      )
+    );
   }
-
 
   next();
 };
 
+
+// ==========================================
+// UPDATE BUDGET
+// ==========================================
 
 const validateBudgetUpdate = (
   req,
   res,
   next
 ) => {
-
   const {
     category,
     amount,
@@ -116,64 +173,93 @@ const validateBudgetUpdate = (
 
   const errors = [];
 
-
-  if (
-    category !== undefined &&
-    category.trim().length === 0
-  ) {
-    errors.push(
-      "Budget category cannot be empty"
-    );
+  if (category !== undefined) {
+    if (
+      typeof category !== "string" ||
+      category.trim().length === 0
+    ) {
+      errors.push({
+        field: "category",
+        message:
+          "Budget category cannot be empty",
+      });
+    }
   }
-
 
   if (
     amount !== undefined &&
-    (amount === "" || Number(amount) <= 0)
+    !isValidAmount(amount)
   ) {
-    errors.push(
-      "Budget amount must be greater than 0"
-    );
+    errors.push({
+      field: "amount",
+      message:
+        "Budget amount must be greater than 0",
+    });
   }
-
 
   if (
     period !== undefined &&
     !allowedPeriods.includes(period)
   ) {
-    errors.push(
-      "Period must be weekly, monthly, or yearly"
-    );
-  }
-
-
-  if (
-    startDate !== undefined &&
-    isNaN(new Date(startDate).getTime())
-  ) {
-    errors.push("Invalid start date");
-  }
-
-
-  if (
-    endDate !== undefined &&
-    isNaN(new Date(endDate).getTime())
-  ) {
-    errors.push("Invalid end date");
-  }
-
-
-  if (errors.length > 0) {
-    return res.status(400).json({
-      success: false,
-      message: errors.join(", "),
+    errors.push({
+      field: "period",
+      message:
+        "Period must be weekly, monthly, or yearly",
     });
   }
 
+  if (
+    startDate !== undefined &&
+    !isValidDate(startDate)
+  ) {
+    errors.push({
+      field: "startDate",
+      message:
+        "Invalid start date. Use YYYY-MM-DD format",
+    });
+  }
+
+  if (
+    endDate !== undefined &&
+    !isValidDate(endDate)
+  ) {
+    errors.push({
+      field: "endDate",
+      message:
+        "Invalid end date. Use YYYY-MM-DD format",
+    });
+  }
+
+  if (
+    startDate &&
+    endDate &&
+    isValidDate(startDate) &&
+    isValidDate(endDate)
+  ) {
+    const start = new Date(`${startDate}T00:00:00Z`);
+    const end = new Date(`${endDate}T00:00:00Z`);
+
+    if (end <= start) {
+      errors.push({
+        field: "endDate",
+        message:
+          "End date must be after start date",
+      });
+    }
+  }
+
+  if (errors.length > 0) {
+    return next(
+      new ApiError(
+        400,
+        "Budget validation failed",
+        errors
+      )
+    );
+  }
 
   next();
 };
-
 
 export {
   validateBudget,

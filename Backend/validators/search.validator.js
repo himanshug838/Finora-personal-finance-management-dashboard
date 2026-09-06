@@ -1,147 +1,208 @@
+import ApiError from "../utils/apiError.util.js";
+
 const allowedTypes = [
-    "all",
-    "transaction",
-    "account",
-    "investment",
-    "budget",
-    "goal",
-    "recurring",
+  "all",
+  "transaction",
+  "account",
+  "investment",
+  "budget",
+  "goal",
+  "recurring",
 ];
 
 const allowedSortOrders = [
-    "asc",
-    "desc",
+  "asc",
+  "desc",
 ];
 
 const isValidDate = (value) => {
-    if (!value) {
-        return true;
-    }
+  if (!value) return true;
 
-    const date = new Date(value);
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(value)
+  ) {
+    return false;
+  }
 
-    return !Number.isNaN(date.getTime());
+  const date = new Date(`${value}T00:00:00Z`);
+
+  return !Number.isNaN(date.getTime());
 };
 
-export const validateSearchQuery = (req, res, next) => {
-    const {
-        type = "all",
-        minAmount,
-        maxAmount,
-        startDate,
-        endDate,
-        page = 1,
-        limit = 20,
-        sortOrder = "desc",
-    } = req.query;
+const isValidNumber = (value) => {
+  const number = Number(value);
 
-    if (!allowedTypes.includes(type)) {
-        return res.status(400).json({
-            success: false,
-            message:
-                "Invalid type. Allowed values: all, transaction, account, investment, budget, goal, recurring.",
-        });
+  return Number.isFinite(number);
+};
+
+
+// ==========================================
+// SEARCH VALIDATION
+// ==========================================
+
+export const validateSearchQuery = (
+  req,
+  res,
+  next
+) => {
+  const {
+    type = "all",
+    minAmount,
+    maxAmount,
+    startDate,
+    endDate,
+    page = "1",
+    limit = "20",
+    sortOrder = "desc",
+  } = req.query;
+
+  const errors = [];
+
+  // Type
+  if (!allowedTypes.includes(type)) {
+    errors.push({
+      field: "type",
+      message:
+        "Invalid type. Allowed values: all, transaction, account, investment, budget, goal, recurring",
+    });
+  }
+
+  // Minimum amount
+  if (
+    minAmount !== undefined &&
+    (
+      !isValidNumber(minAmount) ||
+      Number(minAmount) < 0
+    )
+  ) {
+    errors.push({
+      field: "minAmount",
+      message:
+        "minAmount must be a valid non-negative number",
+    });
+  }
+
+  // Maximum amount
+  if (
+    maxAmount !== undefined &&
+    (
+      !isValidNumber(maxAmount) ||
+      Number(maxAmount) < 0
+    )
+  ) {
+    errors.push({
+      field: "maxAmount",
+      message:
+        "maxAmount must be a valid non-negative number",
+    });
+  }
+
+  // Amount comparison
+  if (
+    minAmount !== undefined &&
+    maxAmount !== undefined &&
+    isValidNumber(minAmount) &&
+    isValidNumber(maxAmount) &&
+    Number(minAmount) > Number(maxAmount)
+  ) {
+    errors.push({
+      field: "amountRange",
+      message:
+        "minAmount cannot be greater than maxAmount",
+    });
+  }
+
+  // Start date
+  if (
+    startDate &&
+    !isValidDate(startDate)
+  ) {
+    errors.push({
+      field: "startDate",
+      message:
+        "Invalid startDate. Use YYYY-MM-DD format",
+    });
+  }
+
+  // End date
+  if (
+    endDate &&
+    !isValidDate(endDate)
+  ) {
+    errors.push({
+      field: "endDate",
+      message:
+        "Invalid endDate. Use YYYY-MM-DD format",
+    });
+  }
+
+  // Date comparison
+  if (
+    startDate &&
+    endDate &&
+    isValidDate(startDate) &&
+    isValidDate(endDate)
+  ) {
+    const start = new Date(`${startDate}T00:00:00Z`);
+    const end = new Date(`${endDate}T00:00:00Z`);
+
+    if (start > end) {
+      errors.push({
+        field: "dateRange",
+        message:
+          "startDate cannot be greater than endDate",
+      });
     }
+  }
 
-    if (
-        minAmount !== undefined &&
-        (
-            Number.isNaN(Number(minAmount)) ||
-            Number(minAmount) < 0
-        )
-    ) {
-        return res.status(400).json({
-            success: false,
-            message: "minAmount must be a valid positive number.",
-        });
-    }
+  // Page
+  const parsedPage = Number(page);
 
-    if (
-        maxAmount !== undefined &&
-        (
-            Number.isNaN(Number(maxAmount)) ||
-            Number(maxAmount) < 0
-        )
-    ) {
-        return res.status(400).json({
-            success: false,
-            message: "maxAmount must be a valid positive number.",
-        });
-    }
+  if (
+    !Number.isInteger(parsedPage) ||
+    parsedPage < 1
+  ) {
+    errors.push({
+      field: "page",
+      message:
+        "page must be a positive integer",
+    });
+  }
 
-    if (
-        minAmount !== undefined &&
-        maxAmount !== undefined &&
-        Number(minAmount) > Number(maxAmount)
-    ) {
-        return res.status(400).json({
-            success: false,
-            message:
-                "minAmount cannot be greater than maxAmount.",
-        });
-    }
+  // Limit
+  const parsedLimit = Number(limit);
 
-    if (!isValidDate(startDate)) {
-        return res.status(400).json({
-            success: false,
-            message:
-                "Invalid startDate. Use YYYY-MM-DD format.",
-        });
-    }
+  if (
+    !Number.isInteger(parsedLimit) ||
+    parsedLimit < 1 ||
+    parsedLimit > 100
+  ) {
+    errors.push({
+      field: "limit",
+      message:
+        "limit must be an integer between 1 and 100",
+    });
+  }
 
-    if (!isValidDate(endDate)) {
-        return res.status(400).json({
-            success: false,
-            message:
-                "Invalid endDate. Use YYYY-MM-DD format.",
-        });
-    }
+  // Sort order
+  if (!allowedSortOrders.includes(sortOrder)) {
+    errors.push({
+      field: "sortOrder",
+      message:
+        "sortOrder must be either asc or desc",
+    });
+  }
 
-    if (startDate && endDate) {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
+  if (errors.length > 0) {
+    return next(
+      new ApiError(
+        400,
+        "Search validation failed",
+        errors
+      )
+    );
+  }
 
-        if (start > end) {
-            return res.status(400).json({
-                success: false,
-                message:
-                    "startDate cannot be greater than endDate.",
-            });
-        }
-    }
-
-    const parsedPage = Number(page);
-    const parsedLimit = Number(limit);
-
-    if (
-        !Number.isInteger(parsedPage) ||
-        parsedPage < 1
-    ) {
-        return res.status(400).json({
-            success: false,
-            message: "page must be a positive integer.",
-        });
-    }
-
-    if (
-        !Number.isInteger(parsedLimit) ||
-        parsedLimit < 1 ||
-        parsedLimit > 100
-    ) {
-        return res.status(400).json({
-            success: false,
-            message:
-                "limit must be an integer between 1 and 100.",
-        });
-    }
-
-    if (!allowedSortOrders.includes(sortOrder)) {
-        return res.status(400).json({
-            success: false,
-            message:
-                "sortOrder must be either asc or desc.",
-        });
-    }
-
-    next();
+  next();
 };

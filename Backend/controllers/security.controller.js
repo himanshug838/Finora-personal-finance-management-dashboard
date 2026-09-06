@@ -1,42 +1,77 @@
-import express from "express";
+import User from "../models/user.model.js";
+import RefreshToken from "../models/refreshToken.model.js";
+import bcrypt from "bcryptjs";
 
-import verificationToken from "../middleware/verifyToken.middle.js";
+import asyncHandler from "../utils/asyncHandler.util.js";
+import ApiError from "../utils/apiError.util.js";
 
 import {
-  logoutAllDevices,
-  verifyCurrentPassword,
-} from "../controllers/security.controller.js";
-
-const securityRouter = express.Router();
-
-
-// ==========================================
-// PROTECTED SECURITY ROUTES
-// ==========================================
-
-securityRouter.use(
-  verificationToken
-);
+  revokeAllUserRefreshTokens,
+} from "../services/token.service.js";
 
 
 // ==========================================
 // LOGOUT ALL DEVICES
 // ==========================================
 
-securityRouter.post(
-  "/logout-all",
-  logoutAllDevices
+export const logoutAllDevices = asyncHandler(
+  async (req, res) => {
+
+    const userId = req.user.id;
+
+    await revokeAllUserRefreshTokens(userId);
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "Logged out from all devices successfully",
+    });
+  }
 );
 
 
 // ==========================================
-// VERIFY PASSWORD
+// VERIFY CURRENT PASSWORD
 // ==========================================
 
-securityRouter.post(
-  "/verify-password",
-  verifyCurrentPassword
+export const verifyCurrentPassword = asyncHandler(
+  async (req, res) => {
+
+    const { currentPassword } = req.body;
+
+    if (!currentPassword) {
+      throw new ApiError(
+        400,
+        "Current password is required"
+      );
+    }
+
+    const user = await User.findById(
+      req.user.id
+    ).select("+password");
+
+    if (!user) {
+      throw new ApiError(
+        404,
+        "User not found"
+      );
+    }
+
+    const isValid = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+
+    if (!isValid) {
+      throw new ApiError(
+        401,
+        "Current password is incorrect"
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Password verified successfully",
+    });
+  }
 );
-
-
-export default securityRouter;

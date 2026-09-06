@@ -1,43 +1,105 @@
-const validateRegister = (req, res, next) => {
-  const { name, email, password } = req.body;
-  const errors = [];
+import {
+  body,
+  validationResult,
+} from "express-validator";
 
-  if (!name || name.trim().length < 3) {
-    errors.push("Username must be at least 3 characters");
-  }
+import ApiError from "../utils/apiError.util.js";
 
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    errors.push("Valid email is required");
-  }
 
-  if (!password || password.length < 6) {
-    errors.push("Password must be at least 6 characters");
-  }
+const handleValidation = (req, res, next) => {
+  const errors = validationResult(req);
 
-  if (errors.length > 0) {
-    return res.status(400).json({ message: errors.join(", ") });
-  }
+  if (!errors.isEmpty()) {
+    const formattedErrors = errors.array().map((error) => ({
+      field: error.path,
+      message: error.msg,
+    }));
 
-  next();
-};
-
-const validateLogin = (req, res, next) => {
-  const { email, password } = req.body;
-  const errors = [];
-
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    errors.push("Valid email is required");
-  }
-
-  if (!password) {
-    errors.push("Password is required");
-  }
-
-  if (errors.length > 0) {
-    return res.status(400).json({ message: errors.join(", ") });
+    throw new ApiError(
+      400,
+      "Validation failed",
+      formattedErrors
+    );
   }
 
   next();
 };
 
-export { validateLogin, validateRegister };
+
+// ============================================
+// REGISTER VALIDATION
+// ============================================
+
+export const validateRegister = [
+  body("name")
+    .trim()
+    .notEmpty()
+    .withMessage("Name is required")
+
+    .isLength({
+      min: 2,
+      max: 50,
+    })
+    .withMessage(
+      "Name must be between 2 and 50 characters"
+    ),
+
+
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("Email is required")
+
+    .isEmail()
+    .withMessage("Please provide a valid email address")
+
+    .normalizeEmail(),
+
+
+  body("password")
+    .notEmpty()
+    .withMessage("Password is required")
+
+    .matches(/[a-z]/)
+    .withMessage(
+      "Password must contain at least one lowercase letter"
+    )
+
+    .matches(/[0-9]/)
+    .withMessage(
+      "Password must contain at least one number"
+    )
+
+    .matches(
+      /[!@#$%^&*(),.?":{}|<>_\-\\[\]/;'+=~`]/
+    )
+    .withMessage(
+      "Password must contain at least one special character"
+    ),
+
+  handleValidation,
+];
+
+
+// ============================================
+// LOGIN VALIDATION
+// ============================================
+
+export const validateLogin = [
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("Email is required")
+
+    .isEmail()
+    .withMessage("Please provide a valid email address")
+
+    .normalizeEmail(),
+
+
+  body("password")
+    .notEmpty()
+    .withMessage("Password is required"),
+
+  handleValidation,
+];

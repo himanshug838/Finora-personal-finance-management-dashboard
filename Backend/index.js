@@ -1,23 +1,25 @@
 import dotenv from "dotenv";
-import connectDB from "./config/db.config.js";
-import app from "./src/app.js";
-import {startRecurringTransactionJob} from "./jobs/recurringTransaction.job.js";
+
 dotenv.config();
+
+import app from "./src/app.js";
+
+import connectDB from "./config/db.config.js";
 
 const PORT = process.env.PORT || 5000;
 
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Server is running at http://localhost:${PORT}`);
-    startRecurringTransactionJob();
-    console.log(`API Docs: http://localhost:${PORT}/api-docs`);
-  });
-}).catch((error) => {
+const startServer = async () => {
+  try {
+    await connectDB();
 
-        console.error(
-            "MongoDB connection failed:",
-            error
-        );
-
-        process.exit(1);
+    app.listen(PORT, () => {
+      console.log(`Finora server running on port ${PORT}`);
     });
+  } catch (error) {
+    console.error("Failed to start server:", error.message);
+
+    process.exit(1);
+  }
+};
+
+startServer();

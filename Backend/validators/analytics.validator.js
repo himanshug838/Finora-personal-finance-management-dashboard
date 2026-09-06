@@ -1,56 +1,127 @@
+import ApiError from "../utils/apiError.util.js";
+
 const isValidDate = (value) => {
-    if (!value) return false;
+  if (!value) return true;
 
-    const date = new Date(value);
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(value)
+  ) {
+    return false;
+  }
 
-    return !Number.isNaN(date.getTime());
-};
+  const date = new Date(`${value}T00:00:00Z`);
 
-export const validateAnalyticsDateRange = (req, res, next) => {
-    const { startDate, endDate } = req.query;
-
-    if (startDate && !isValidDate(startDate)) {
-        return res.status(400).json({
-            success: false,
-            message: "Invalid startDate. Use YYYY-MM-DD format."
-        });
-    }
-
-    if (endDate && !isValidDate(endDate)) {
-        return res.status(400).json({
-            success: false,
-            message: "Invalid endDate. Use YYYY-MM-DD format."
-        });
-    }
-
-    if (startDate && endDate) {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-
-        if (start > end) {
-            return res.status(400).json({
-                success: false,
-                message: "startDate cannot be greater than endDate."
-            });
-        }
-    }
-
-    next();
+  return !Number.isNaN(date.getTime());
 };
 
 
-export const validateMonths = (req, res, next) => {
-    const months = Number(req.query.months);
+// ==========================================
+// ANALYTICS DATE RANGE
+// ==========================================
 
-    if (
-        req.query.months !== undefined &&
-        (!Number.isInteger(months) || months < 1 || months > 24)
-    ) {
-        return res.status(400).json({
-            success: false,
-            message: "months must be an integer between 1 and 24."
-        });
+export const validateAnalyticsDateRange = (
+  req,
+  res,
+  next
+) => {
+  const {
+    startDate,
+    endDate,
+  } = req.query;
+
+  const errors = [];
+
+  if (
+    startDate &&
+    !isValidDate(startDate)
+  ) {
+    errors.push({
+      field: "startDate",
+      message:
+        "Invalid startDate. Use YYYY-MM-DD format",
+    });
+  }
+
+  if (
+    endDate &&
+    !isValidDate(endDate)
+  ) {
+    errors.push({
+      field: "endDate",
+      message:
+        "Invalid endDate. Use YYYY-MM-DD format",
+    });
+  }
+
+  if (
+    startDate &&
+    endDate &&
+    isValidDate(startDate) &&
+    isValidDate(endDate)
+  ) {
+    const start = new Date(`${startDate}T00:00:00Z`);
+    const end = new Date(`${endDate}T00:00:00Z`);
+
+    if (start > end) {
+      errors.push({
+        field: "dateRange",
+        message:
+          "startDate cannot be greater than endDate",
+      });
     }
+  }
 
-    next();
+  if (errors.length > 0) {
+    return next(
+      new ApiError(
+        400,
+        "Analytics validation failed",
+        errors
+      )
+    );
+  }
+
+  next();
+};
+
+
+// ==========================================
+// ANALYTICS MONTHS
+// ==========================================
+
+export const validateMonths = (
+  req,
+  res,
+  next
+) => {
+  const { months } = req.query;
+
+  if (months === undefined) {
+    return next();
+  }
+
+  const parsedMonths = Number(months);
+
+  if (
+    !Number.isInteger(parsedMonths) ||
+    parsedMonths < 1 ||
+    parsedMonths > 24
+  ) {
+    return next(
+      new ApiError(
+        400,
+        "Analytics validation failed",
+        [
+          {
+            field: "months",
+            message:
+              "months must be an integer between 1 and 24",
+          },
+        ]
+      )
+    );
+  }
+
+  next();
 };

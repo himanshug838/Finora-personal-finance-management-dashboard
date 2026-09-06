@@ -1,3 +1,5 @@
+import ApiError from "../utils/apiError.util.js";
+
 const allowedCurrencies = [
   "INR",
   "USD",
@@ -19,58 +21,113 @@ const allowedTransactionTypes = [
   "expense",
 ];
 
-export const validateProfileUpdate = (req, res, next) => {
+const isStrongPassword = (password) => {
+  return (
+    typeof password === "string" &&
+    password.length >= 8 &&
+    /[A-Z]/.test(password) &&
+    /[a-z]/.test(password) &&
+    /\d/.test(password) &&
+    /[^A-Za-z0-9]/.test(password)
+  );
+};
+
+
+// ==========================================
+// PROFILE UPDATE
+// ==========================================
+
+export const validateProfileUpdate = (
+  req,
+  res,
+  next
+) => {
   const {
     name,
     currency,
     monthlyIncome,
   } = req.body;
 
+  const errors = [];
+
+  // Name
   if (name !== undefined) {
-    if (typeof name !== "string" || name.trim().length < 2) {
-      return res.status(400).json({
-        success: false,
-        message: "Name must be at least 2 characters",
+    if (
+      typeof name !== "string" ||
+      name.trim().length < 2
+    ) {
+      errors.push({
+        field: "name",
+        message:
+          "Name must be at least 2 characters",
       });
     }
 
-    if (name.trim().length > 50) {
-      return res.status(400).json({
-        success: false,
-        message: "Name cannot exceed 50 characters",
+    if (
+      typeof name === "string" &&
+      name.trim().length > 50
+    ) {
+      errors.push({
+        field: "name",
+        message:
+          "Name cannot exceed 50 characters",
       });
     }
   }
 
+  // Currency
   if (currency !== undefined) {
     if (
       typeof currency !== "string" ||
-      !allowedCurrencies.includes(currency.toUpperCase())
+      !allowedCurrencies.includes(
+        currency.toUpperCase()
+      )
     ) {
-      return res.status(400).json({
-        success: false,
+      errors.push({
+        field: "currency",
         message: "Invalid currency",
       });
     }
   }
 
+  // Monthly income
   if (monthlyIncome !== undefined) {
     if (
       typeof monthlyIncome !== "number" ||
-      Number.isNaN(monthlyIncome) ||
+      !Number.isFinite(monthlyIncome) ||
       monthlyIncome < 0
     ) {
-      return res.status(400).json({
-        success: false,
-        message: "Monthly income must be a valid positive number",
+      errors.push({
+        field: "monthlyIncome",
+        message:
+          "Monthly income must be a valid non-negative number",
       });
     }
+  }
+
+  if (errors.length > 0) {
+    return next(
+      new ApiError(
+        400,
+        "Profile validation failed",
+        errors
+      )
+    );
   }
 
   next();
 };
 
-export const validatePreferencesUpdate = (req, res, next) => {
+
+// ==========================================
+// PREFERENCES
+// ==========================================
+
+export const validatePreferencesUpdate = (
+  req,
+  res,
+  next
+) => {
   const {
     timezone,
     language,
@@ -79,17 +136,33 @@ export const validatePreferencesUpdate = (req, res, next) => {
     defaultTransactionType,
   } = req.body;
 
-  if (timezone !== undefined && typeof timezone !== "string") {
-    return res.status(400).json({
-      success: false,
-      message: "Timezone must be a string",
+  const errors = [];
+
+  if (
+    timezone !== undefined &&
+    (
+      typeof timezone !== "string" ||
+      timezone.trim().length === 0
+    )
+  ) {
+    errors.push({
+      field: "timezone",
+      message:
+        "Timezone must be a valid string",
     });
   }
 
-  if (language !== undefined && typeof language !== "string") {
-    return res.status(400).json({
-      success: false,
-      message: "Language must be a string",
+  if (
+    language !== undefined &&
+    (
+      typeof language !== "string" ||
+      language.trim().length === 0
+    )
+  ) {
+    errors.push({
+      field: "language",
+      message:
+        "Language must be a valid string",
     });
   }
 
@@ -97,9 +170,10 @@ export const validatePreferencesUpdate = (req, res, next) => {
     dateFormat !== undefined &&
     !allowedDateFormats.includes(dateFormat)
   ) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid date format",
+    errors.push({
+      field: "dateFormat",
+      message:
+        "Invalid date format",
     });
   }
 
@@ -107,24 +181,43 @@ export const validatePreferencesUpdate = (req, res, next) => {
     weekStartsOn !== undefined &&
     ![0, 1].includes(weekStartsOn)
   ) {
-    return res.status(400).json({
-      success: false,
-      message: "weekStartsOn must be 0 or 1",
+    errors.push({
+      field: "weekStartsOn",
+      message:
+        "weekStartsOn must be 0 or 1",
     });
   }
 
   if (
     defaultTransactionType !== undefined &&
-    !allowedTransactionTypes.includes(defaultTransactionType)
+    !allowedTransactionTypes.includes(
+      defaultTransactionType
+    )
   ) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid default transaction type",
+    errors.push({
+      field: "defaultTransactionType",
+      message:
+        "Invalid default transaction type",
     });
+  }
+
+  if (errors.length > 0) {
+    return next(
+      new ApiError(
+        400,
+        "Preferences validation failed",
+        errors
+      )
+    );
   }
 
   next();
 };
+
+
+// ==========================================
+// NOTIFICATION PREFERENCES
+// ==========================================
 
 export const validateNotificationPreferences = (
   req,
@@ -140,46 +233,98 @@ export const validateNotificationPreferences = (
     "emailNotifications",
   ];
 
+  const errors = [];
+
   for (const field of allowedFields) {
     if (
       req.body[field] !== undefined &&
       typeof req.body[field] !== "boolean"
     ) {
-      return res.status(400).json({
-        success: false,
-        message: `${field} must be a boolean`,
+      errors.push({
+        field,
+        message:
+          `${field} must be a boolean`,
       });
     }
+  }
+
+  if (errors.length > 0) {
+    return next(
+      new ApiError(
+        400,
+        "Notification preferences validation failed",
+        errors
+      )
+    );
   }
 
   next();
 };
 
-export const validatePasswordChange = (req, res, next) => {
+
+// ==========================================
+// PASSWORD CHANGE
+// ==========================================
+
+export const validatePasswordChange = (
+  req,
+  res,
+  next
+) => {
   const {
     currentPassword,
     newPassword,
   } = req.body;
 
-  if (!currentPassword || !newPassword) {
-    return res.status(400).json({
-      success: false,
-      message: "Current password and new password are required",
+  const errors = [];
+
+  if (!currentPassword) {
+    errors.push({
+      field: "currentPassword",
+      message:
+        "Current password is required",
     });
   }
 
-  if (newPassword.length < 6) {
-    return res.status(400).json({
-      success: false,
-      message: "New password must be at least 6 characters",
+  if (!newPassword) {
+    errors.push({
+      field: "newPassword",
+      message:
+        "New password is required",
     });
   }
 
-  if (currentPassword === newPassword) {
-    return res.status(400).json({
-      success: false,
-      message: "New password must be different from current password",
+  if (
+    newPassword &&
+    !isStrongPassword(newPassword)
+  ) {
+    errors.push({
+      field: "newPassword",
+      message:
+        "Password must be at least 8 characters and contain uppercase, lowercase, number, and special character",
     });
+  }
+
+  if (
+    currentPassword &&
+    newPassword &&
+    currentPassword === newPassword
+  ) {
+    errors.push({
+      field: "newPassword",
+      message:
+        "New password must be different from current password",
+    });
+  }
+
+  if (errors.length > 0) {
+    return next(
+      new ApiError(
+        400,
+        "Password validation failed",
+        errors
+      )
+    );
   }
 
   next();
