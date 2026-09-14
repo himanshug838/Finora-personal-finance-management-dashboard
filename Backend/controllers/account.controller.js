@@ -16,20 +16,37 @@ const createAccount = asyncHandler(async (req, res) => {
     currency,
   } = req.body;
 
-  if (!accountName || !accountType) {
+  if (!accountName) {
     throw new ApiError(
       400,
-      "Account name and account type are required"
+      "Account name is required"
     );
+  }
+
+  const validTypes = [
+    "bank",
+    "savings",
+    "checking",
+    "credit",
+    "credit_card",
+    "cash",
+    "investment",
+    "loan",
+    "other",
+  ];
+
+  let formattedType = (accountType || "bank").toLowerCase().trim();
+  if (!validTypes.includes(formattedType)) {
+    formattedType = "bank";
   }
 
   const account = await Account.create({
     user: userId,
     accountName,
-    institutionName,
-    accountType,
-    accountNumber,
-    balance: balance || 0,
+    institutionName: institutionName || "",
+    accountType: formattedType,
+    accountNumber: accountNumber || "",
+    balance: Number(balance) || 0,
     currency: currency || "INR",
     source: "manual",
   });

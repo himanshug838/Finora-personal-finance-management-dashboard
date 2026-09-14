@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import User from "../models/user.model.js";
 import asyncHandler from "../utils/asyncHandler.util.js";
 import ApiError from "../utils/apiError.util.js";
+import createNotification from "../utils/notification.util.js";
 
 const register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -42,6 +43,14 @@ const register = asyncHandler(async (req, res) => {
   });
 
   await user.save();
+
+  await createNotification({
+    user: user._id,
+    title: "Welcome to Finora! 🎉",
+    message: `Hello ${name}! Welcome to your personal finance management dashboard. Track your accounts, transactions, and investments seamlessly.`,
+    type: "system",
+    severity: "success",
+  });
 
   res.status(201).json({
     message: "User created successfully",

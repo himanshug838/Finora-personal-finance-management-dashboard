@@ -71,19 +71,17 @@ router.put(
 // ADD MONEY
 // ==========================================
 
-router.post(
-    "/:id/add",
-    addMoneyToGoal
-);
+router.post("/:id/add", addMoneyToGoal);
+router.patch("/:id/add", addMoneyToGoal);
+router.post("/:id/add-money", addMoneyToGoal);
+router.patch("/:id/add-money", addMoneyToGoal);
 
 // ==========================================
 // WITHDRAW MONEY
 // ==========================================
 
-router.post(
-    "/:id/withdraw",
-    withdrawMoneyFromGoal
-);
+router.post("/:id/withdraw", withdrawMoneyFromGoal);
+router.patch("/:id/withdraw", withdrawMoneyFromGoal);
 
 // ==========================================
 // DELETE GOAL
