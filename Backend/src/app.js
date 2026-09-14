@@ -8,6 +8,9 @@ import morgan from "morgan";
 
 import cookieParser from "cookie-parser";
 
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "../config/swagger.config.js";
+
 // ============================================
 // ROUTES
 // ============================================
@@ -21,6 +24,8 @@ import transactionRoute from "../routes/transaction.routes.js";
 import budgetRoute from "../routes/budget.routes.js";
 
 import investmentRoute from "../routes/investment.routes.js";
+
+import financialGoalRoute from "../routes/financialGoal.routes.js";
 
 import dashboardRoute from "../routes/dashboard.routes.js";
 
@@ -53,6 +58,17 @@ import errorHandler from "../middleware/errorHandler.middle.js";
 const app = express();
 
 // ============================================
+// SWAGGER UI DOCUMENTATION
+// ============================================
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use("/swagger", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get("/swagger.json", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(swaggerSpec);
+});
+
+// ============================================
 // SECURITY
 // ============================================
 
@@ -64,12 +80,9 @@ app.use(helmet());
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-
+    origin: (origin, callback) => callback(null, true),
     credentials: true,
-
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
@@ -113,6 +126,8 @@ app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
     message: "Finora / PFM Dashboard API is running",
+    documentation: "/api-docs",
+    swaggerUi: "/swagger",
   });
 });
 
@@ -129,6 +144,8 @@ app.use("/api/v1/transactions", transactionRoute);
 app.use("/api/v1/budgets", budgetRoute);
 
 app.use("/api/v1/investments", investmentRoute);
+
+app.use("/api/v1/goals", financialGoalRoute);
 
 app.use("/api/v1/dashboard", dashboardRoute);
 

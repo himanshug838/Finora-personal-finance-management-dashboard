@@ -10,6 +10,21 @@ const allowedInvestmentTypes = [
   "other",
 ];
 
+const typeMap = {
+  stocks: "stock",
+  stock: "stock",
+  mutual_funds: "mutual_fund",
+  mutual_fund: "mutual_fund",
+  etf: "etf",
+  crypto: "crypto",
+  cryptocurrency: "crypto",
+  fixed_deposit: "fixed_deposit",
+  bond: "bond",
+  bonds: "bond",
+  real_estate: "other",
+  other: "other",
+};
+
 const isPositiveNumber = (value) => {
   if (
     value === undefined ||
@@ -69,6 +84,12 @@ const validateInvestment = (
   res,
   next
 ) => {
+  // Normalize assetType to investmentType if needed
+  let rawType = req.body.investmentType || req.body.assetType;
+  if (rawType && typeMap[rawType]) {
+    req.body.investmentType = typeMap[rawType];
+  }
+
   const {
     name,
     investmentType,
@@ -195,6 +216,11 @@ const validateInvestmentUpdate = (
   res,
   next
 ) => {
+  let rawType = req.body.investmentType || req.body.assetType;
+  if (rawType && typeMap[rawType]) {
+    req.body.investmentType = typeMap[rawType];
+  }
+
   const {
     name,
     investmentType,

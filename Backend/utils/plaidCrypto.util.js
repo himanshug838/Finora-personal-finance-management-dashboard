@@ -5,16 +5,14 @@ dotenv.config();
 
 const ALGORITHM = "aes-256-gcm";
 
-const KEY = Buffer.from(
-  process.env.PLAID_ENCRYPTION_KEY,
-  "hex"
-);
+const rawKey =
+  process.env.PLAID_ENCRYPTION_KEY ||
+  crypto
+    .createHash("sha256")
+    .update(process.env.JWT_SECRET || "finora_default_secret_key_32_bytes_long")
+    .digest("hex");
 
-if (KEY.length !== 32) {
-  throw new Error(
-    "PLAID_ENCRYPTION_KEY must be exactly 32 bytes / 64 hex characters"
-  );
-}
+const KEY = Buffer.from(rawKey.slice(0, 64), "hex");
 
 
 /*

@@ -26,42 +26,34 @@ import {
 
 const createLinkToken = asyncHandler(
   async (req, res) => {
-
     const userId = req.user.id;
 
-    const response =
-      await plaidClient.linkTokenCreate({
-
+    try {
+      const response = await plaidClient.linkTokenCreate({
         user: {
-          client_user_id:
-            userId.toString(),
+          client_user_id: userId.toString(),
         },
-
-        client_name:
-          "Personal Finance Management Dashboard",
-
-        products: [
-          "transactions",
-        ],
-
-        country_codes: [
-          process.env.PLAID_COUNTRY_CODES || "US"
-        ],
-
+        client_name: "Personal Finance Management Dashboard",
+        products: ["transactions"],
+        country_codes: [process.env.PLAID_COUNTRY_CODES || "US"],
         language: "en",
-
       });
 
+      res.status(200).json({
+        success: true,
+        linkToken: response.data.link_token,
+      });
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.error_message ||
+        error.message ||
+        "Plaid service configuration issue";
 
-    res.status(200).json({
-
-      success: true,
-
-      linkToken:
-        response.data.link_token,
-
-    });
-
+      res.status(400).json({
+        success: false,
+        message: `Plaid Integration: ${errorMessage}`,
+      });
+    }
   }
 );
 
