@@ -137,6 +137,10 @@ const login = asyncHandler(async (req, res) => {
 
     message: "Login successful",
 
+    token: accessToken,
+
+    accessToken,
+
     data: {
 
       user: {
@@ -148,6 +152,8 @@ const login = asyncHandler(async (req, res) => {
       },
 
       accessToken,
+
+      token: accessToken,
     },
   });
 });
@@ -412,6 +418,41 @@ export const logout = asyncHandler(
     });
   }
 );
+
+
+// =====================================================
+// FORGOT / RESET PASSWORD
+// =====================================================
+
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { email, password, newPassword } = req.body;
+  const targetPassword = newPassword || password;
+
+  if (!email || !targetPassword) {
+    throw new ApiError(400, "Email and new password are required");
+  }
+
+  if (targetPassword.length < 6) {
+    throw new ApiError(400, "Password must be at least 6 characters long");
+  }
+
+  const user = await User.findOne({
+    email: email.toLowerCase().trim(),
+  }).select("+password");
+
+  if (!user) {
+    throw new ApiError(404, "No account found with this email address");
+  }
+
+  const hashedPassword = await bcrypt.hash(targetPassword, 10);
+  user.password = hashedPassword;
+  await user.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Password updated successfully. You can now sign in with your new password.",
+  });
+});
 
 
 export default login;
