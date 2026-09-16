@@ -8,6 +8,39 @@ import ApiError from "../utils/apiError.util.js";
 
 
 // ======================================================
+// HELPER: EXECUTE WITH OPTIONAL TRANSACTION / SESSION
+// ======================================================
+
+const runWithSession = async (workFn) => {
+  let session = null;
+  try {
+    session = await mongoose.startSession();
+    let result;
+    await session.withTransaction(async () => {
+      result = await workFn(session);
+    });
+    return result;
+  } catch (error) {
+    const isStandaloneError =
+      error.message &&
+      (error.message.includes("replica set") ||
+       error.message.includes("Transaction numbers") ||
+       error.code === 20 ||
+       error.codeName === "IllegalOperation");
+
+    if (isStandaloneError) {
+      return await workFn(null);
+    }
+    throw error;
+  } finally {
+    if (session) {
+      await session.endSession().catch(() => {});
+    }
+  }
+};
+
+
+// ======================================================
 // HELPER: GET ACCOUNT
 // ======================================================
 
@@ -16,15 +49,52 @@ const getUserAccount = async (
   userId,
   session
 ) => {
+  if (!accountId) {
+    let queryAcc = Account.findOne({ user: userId, isActive: true });
+    if (session) queryAcc.session(session);
+    let userAcc = await queryAcc;
+    if (!userAcc) {
+      if (session) {
+        const created = await Account.create([{
+          user: userId,
+          accountName: "Main Cash Account",
+          institutionName: "Cash / General",
+          accountType: "savings",
+          balance: 0,
+          currency: "INR",
+          source: "manual",
+        }], { session });
+        userAcc = created[0];
+      } else {
+        userAcc = await Account.create({
+          user: userId,
+          accountName: "Main Cash Account",
+          institutionName: "Cash / General",
+          accountType: "savings",
+          balance: 0,
+          currency: "INR",
+          source: "manual",
+        });
+      }
+    }
+    return userAcc;
+  }
+
   if (!mongoose.Types.ObjectId.isValid(accountId)) {
     throw new ApiError(400, "Invalid account ID");
   }
 
-  const account = await Account.findOne({
+  const query = Account.findOne({
     _id: accountId,
     user: userId,
     isActive: true,
-  }).session(session);
+  });
+
+  if (session) {
+    query.session(session);
+  }
+
+  const account = await query;
 
   if (!account) {
     throw new ApiError(
@@ -46,6 +116,7 @@ const applyTransactionBalance = async (
   session
 ) => {
   const amount = transaction.amount;
+  const opts = session ? { session, runValidators: true } : { runValidators: true };
 
   // Income → Add money
   if (transaction.type === "income") {
@@ -56,10 +127,7 @@ const applyTransactionBalance = async (
           balance: amount,
         },
       },
-      {
-        session,
-        runValidators: true,
-      }
+      opts
     );
   }
 
@@ -72,10 +140,7 @@ const applyTransactionBalance = async (
           balance: -amount,
         },
       },
-      {
-        session,
-        runValidators: true,
-      }
+      opts
     );
   }
 
@@ -88,10 +153,7 @@ const applyTransactionBalance = async (
           balance: -amount,
         },
       },
-      {
-        session,
-        runValidators: true,
-      }
+      opts
     );
 
     await Account.findByIdAndUpdate(
@@ -101,10 +163,7 @@ const applyTransactionBalance = async (
           balance: amount,
         },
       },
-      {
-        session,
-        runValidators: true,
-      }
+      opts
     );
   }
 };
@@ -119,6 +178,7 @@ const reverseTransactionBalance = async (
   session
 ) => {
   const amount = transaction.amount;
+  const opts = session ? { session, runValidators: true } : { runValidators: true };
 
   // Reverse income
   if (transaction.type === "income") {
@@ -129,10 +189,7 @@ const reverseTransactionBalance = async (
           balance: -amount,
         },
       },
-      {
-        session,
-        runValidators: true,
-      }
+      opts
     );
   }
 
@@ -145,10 +202,7 @@ const reverseTransactionBalance = async (
           balance: amount,
         },
       },
-      {
-        session,
-        runValidators: true,
-      }
+      opts
     );
   }
 
@@ -161,10 +215,7 @@ const reverseTransactionBalance = async (
           balance: amount,
         },
       },
-      {
-        session,
-        runValidators: true,
-      }
+      opts
     );
 
     await Account.findByIdAndUpdate(
@@ -174,10 +225,7 @@ const reverseTransactionBalance = async (
           balance: -amount,
         },
       },
-      {
-        session,
-        runValidators: true,
-      }
+      opts
     );
   }
 };
@@ -206,114 +254,96 @@ const createTransaction = asyncHandler(
     } = req.body;
 
 
-    const session =
-      await mongoose.startSession();
-
-
-    try {
-
-      let createdTransaction;
-
-
-      await session.withTransaction(
-        async () => {
-
-          // Validate source account
-          await getUserAccount(
-            account,
-            userId,
-            session
-          );
-
-
-          // Validate destination account
-          if (type === "transfer") {
-
-            await getUserAccount(
-              transferAccount,
-              userId,
-              session
-            );
-
-            if (
-              account.toString() ===
-              transferAccount.toString()
-            ) {
-              throw new ApiError(
-                400,
-                "Source and destination accounts cannot be the same"
-              );
-            }
-          }
-
-
-          // Create transaction
-          const transaction =
-            new Transaction({
-              user: userId,
-              account,
-              transferAccount:
-                type === "transfer"
-                  ? transferAccount
-                  : null,
-              type,
-              amount: Number(amount),
-              category:
-                category.toLowerCase(),
-              description,
-              merchant,
-              paymentMethod,
-              date: date || Date.now(),
-              notes,
-              source: "manual",
-            });
-
-
-          await transaction.save({
-            session,
-          });
-
-
-          // Update account balances
-          await applyTransactionBalance(
-            transaction,
-            session
-          );
-
-
-          createdTransaction =
-            transaction;
-        }
+    const createdTransaction = await runWithSession(async (session) => {
+      const sourceAcc = await getUserAccount(
+        account,
+        userId,
+        session
       );
 
+      const accId = sourceAcc._id;
+      let destAccId = null;
 
-      const populatedTransaction =
-        await Transaction.findById(
-          createdTransaction._id
-        )
-          .populate(
-            "account",
-            "accountName institutionName accountType balance currency"
-          )
-          .populate(
-            "transferAccount",
-            "accountName institutionName accountType balance currency"
+      if (type === "transfer") {
+        const destAcc = await getUserAccount(
+          transferAccount,
+          userId,
+          session
+        );
+        destAccId = destAcc._id;
+
+        if (accId.toString() === destAccId.toString()) {
+          throw new ApiError(
+            400,
+            "Source and destination accounts cannot be the same"
           );
+        }
+      }
+
+      let transaction;
+      if (session) {
+        const created = await Transaction.create([{
+          user: userId,
+          account: accId,
+          transferAccount: type === "transfer" ? destAccId : null,
+          type,
+          amount: Number(amount),
+          category: category.toLowerCase(),
+          description,
+          merchant,
+          paymentMethod,
+          date: date || Date.now(),
+          notes,
+          source: "manual",
+        }], { session });
+        transaction = created[0];
+      } else {
+        transaction = await Transaction.create({
+          user: userId,
+          account: accId,
+          transferAccount: type === "transfer" ? destAccId : null,
+          type,
+          amount: Number(amount),
+          category: category.toLowerCase(),
+          description,
+          merchant,
+          paymentMethod,
+          date: date || Date.now(),
+          notes,
+          source: "manual",
+        });
+      }
+
+      await applyTransactionBalance(
+        transaction,
+        session
+      );
+
+      return transaction;
+    });
 
 
-      res.status(201).json({
-        success: true,
-        message:
-          "Transaction created successfully",
-        transaction:
-          populatedTransaction,
-      });
+    const populatedTransaction =
+      await Transaction.findById(
+        createdTransaction._id
+      )
+        .populate(
+          "account",
+          "accountName institutionName accountType balance currency"
+        )
+        .populate(
+          "transferAccount",
+          "accountName institutionName accountType balance currency"
+        );
 
-    } finally {
 
-      await session.endSession();
-
-    }
+    res.status(201).json({
+      success: true,
+      message:
+        "Transaction created successfully",
+      transaction:
+        populatedTransaction,
+    });
   }
 );
 
@@ -554,225 +584,144 @@ const updateTransaction =
     }
 
 
-    const session =
-      await mongoose.startSession();
+    const updatedTransaction = await runWithSession(async (session) => {
+      let queryTx = Transaction.findOne({
+        _id: id,
+        user: userId,
+        isActive: true,
+      });
+      if (session) queryTx.session(session);
 
+      const transaction = await queryTx;
 
-    try {
+      if (!transaction) {
+        throw new ApiError(
+          404,
+          "Transaction not found"
+        );
+      }
 
-      let updatedTransaction;
+      const oldTransaction = transaction.toObject();
 
-
-      await session.withTransaction(
-        async () => {
-
-          // Find old transaction
-          const transaction =
-            await Transaction.findOne({
-              _id: id,
-              user: userId,
-              isActive: true,
-            }).session(session);
-
-
-          if (!transaction) {
-            throw new ApiError(
-              404,
-              "Transaction not found"
-            );
-          }
-
-
-          // Save old transaction data
-          const oldTransaction =
-            transaction.toObject();
-
-
-          // Reverse old balance effect
-          await reverseTransactionBalance(
-            oldTransaction,
-            session
-          );
-
-
-          // Get new values
-          const {
-            account,
-            transferAccount,
-            type,
-            amount,
-            category,
-            description,
-            merchant,
-            paymentMethod,
-            date,
-            notes,
-          } = req.body;
-
-
-          const newAccount =
-            account ||
-            transaction.account;
-
-          const newType =
-            type ||
-            transaction.type;
-
-          const newAmount =
-            amount !== undefined
-              ? Number(amount)
-              : transaction.amount;
-
-          const newCategory =
-            category ||
-            transaction.category;
-
-
-          // Validate new source account
-          await getUserAccount(
-            newAccount,
-            userId,
-            session
-          );
-
-
-          // Validate transfer destination
-          let newTransferAccount =
-            transaction.transferAccount;
-
-
-          if (newType === "transfer") {
-
-            newTransferAccount =
-              transferAccount ||
-              transaction.transferAccount;
-
-            if (!newTransferAccount) {
-              throw new ApiError(
-                400,
-                "Destination account is required for a transfer"
-              );
-            }
-
-
-            await getUserAccount(
-              newTransferAccount,
-              userId,
-              session
-            );
-
-
-            if (
-              newAccount.toString() ===
-              newTransferAccount.toString()
-            ) {
-              throw new ApiError(
-                400,
-                "Source and destination accounts cannot be the same"
-              );
-            }
-
-          } else {
-
-            newTransferAccount = null;
-
-          }
-
-
-          // Update transaction
-          transaction.account =
-            newAccount;
-
-          transaction.transferAccount =
-            newTransferAccount;
-
-          transaction.type =
-            newType;
-
-          transaction.amount =
-            newAmount;
-
-          transaction.category =
-            newCategory.toLowerCase();
-
-
-          if (
-            description !== undefined
-          ) {
-            transaction.description =
-              description;
-          }
-
-          if (
-            merchant !== undefined
-          ) {
-            transaction.merchant =
-              merchant;
-          }
-
-          if (
-            paymentMethod !== undefined
-          ) {
-            transaction.paymentMethod =
-              paymentMethod;
-          }
-
-          if (date !== undefined) {
-            transaction.date =
-              new Date(date);
-          }
-
-          if (notes !== undefined) {
-            transaction.notes =
-              notes;
-          }
-
-
-          await transaction.save({
-            session,
-          });
-
-
-          // Apply new balance effect
-          await applyTransactionBalance(
-            transaction,
-            session
-          );
-
-
-          updatedTransaction =
-            transaction;
-        }
+      await reverseTransactionBalance(
+        oldTransaction,
+        session
       );
 
+      const {
+        account,
+        transferAccount,
+        type,
+        amount,
+        category,
+        description,
+        merchant,
+        paymentMethod,
+        date,
+        notes,
+      } = req.body;
 
-      const populatedTransaction =
-        await Transaction.findById(
-          updatedTransaction._id
-        )
-          .populate(
-            "account",
-            "accountName institutionName accountType balance currency"
-          )
-          .populate(
-            "transferAccount",
-            "accountName institutionName accountType balance currency"
+      const newAccount = account || transaction.account;
+      const newType = type || transaction.type;
+      const newAmount = amount !== undefined ? Number(amount) : transaction.amount;
+      const newCategory = category || transaction.category;
+
+      await getUserAccount(
+        newAccount,
+        userId,
+        session
+      );
+
+      let newTransferAccount = transaction.transferAccount;
+
+      if (newType === "transfer") {
+        newTransferAccount = transferAccount || transaction.transferAccount;
+
+        if (!newTransferAccount) {
+          throw new ApiError(
+            400,
+            "Destination account is required for a transfer"
           );
+        }
+
+        await getUserAccount(
+          newTransferAccount,
+          userId,
+          session
+        );
+
+        if (
+          newAccount.toString() ===
+          newTransferAccount.toString()
+        ) {
+          throw new ApiError(
+            400,
+            "Source and destination accounts cannot be the same"
+          );
+        }
+      } else {
+        newTransferAccount = null;
+      }
+
+      transaction.account = newAccount;
+      transaction.transferAccount = newTransferAccount;
+      transaction.type = newType;
+      transaction.amount = newAmount;
+      transaction.category = newCategory.toLowerCase();
+
+      if (description !== undefined) {
+        transaction.description = description;
+      }
+
+      if (merchant !== undefined) {
+        transaction.merchant = merchant;
+      }
+
+      if (paymentMethod !== undefined) {
+        transaction.paymentMethod = paymentMethod;
+      }
+
+      if (date !== undefined) {
+        transaction.date = new Date(date);
+      }
+
+      if (notes !== undefined) {
+        transaction.notes = notes;
+      }
+
+      const saveOpts = session ? { session } : {};
+      await transaction.save(saveOpts);
+
+      await applyTransactionBalance(
+        transaction,
+        session
+      );
+
+      return transaction;
+    });
 
 
-      res.status(200).json({
-        success: true,
-        message:
-          "Transaction updated successfully",
-        transaction:
-          populatedTransaction,
-      });
+    const populatedTransaction =
+      await Transaction.findById(
+        updatedTransaction._id
+      )
+        .populate(
+          "account",
+          "accountName institutionName accountType balance currency"
+        )
+        .populate(
+          "transferAccount",
+          "accountName institutionName accountType balance currency"
+        );
 
-    } finally {
 
-      await session.endSession();
-
-    }
+    res.status(200).json({
+      success: true,
+      message:
+        "Transaction updated successfully",
+      transaction:
+        populatedTransaction,
+    });
 
   });
 
@@ -799,61 +748,40 @@ const deleteTransaction =
     }
 
 
-    const session =
-      await mongoose.startSession();
+    await runWithSession(async (session) => {
+      let queryTx = Transaction.findOne({
+        _id: id,
+        user: userId,
+        isActive: true,
+      });
+      if (session) queryTx.session(session);
 
+      const transaction = await queryTx;
 
-    try {
+      if (!transaction) {
+        throw new ApiError(
+          404,
+          "Transaction not found"
+        );
+      }
 
-      await session.withTransaction(
-        async () => {
-
-          const transaction =
-            await Transaction.findOne({
-              _id: id,
-              user: userId,
-              isActive: true,
-            }).session(session);
-
-
-          if (!transaction) {
-            throw new ApiError(
-              404,
-              "Transaction not found"
-            );
-          }
-
-
-          // Reverse transaction effect
-          await reverseTransactionBalance(
-            transaction,
-            session
-          );
-
-
-          // Soft delete
-          transaction.isActive =
-            false;
-
-          await transaction.save({
-            session,
-          });
-
-        }
+      await reverseTransactionBalance(
+        transaction,
+        session
       );
 
+      transaction.isActive = false;
 
-      res.status(200).json({
-        success: true,
-        message:
-          "Transaction deleted successfully",
-      });
+      const saveOpts = session ? { session } : {};
+      await transaction.save(saveOpts);
+    });
 
-    } finally {
 
-      await session.endSession();
-
-    }
+    res.status(200).json({
+      success: true,
+      message:
+        "Transaction deleted successfully",
+    });
 
   });
 

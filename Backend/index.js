@@ -12,8 +12,11 @@ const startServer = async () => {
   try {
     await connectDB();
 
-    app.listen(PORT, () => {
-      console.log(`Finora server running on port http://localhost:${PORT}`);
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`====================================================`);
+      console.log(`🚀 Finora server running on http://localhost:${PORT}`);
+      console.log(`📚 API Documentation available at http://localhost:${PORT}/api-docs`);
+      console.log(`====================================================`);
     });
   } catch (error) {
     console.error("Failed to start server:", error.message);

@@ -62,8 +62,11 @@ const validateFinancialGoal = ({
     return "Invalid target date";
   }
 
-  if (parsedDate <= new Date()) {
-    return "Target date must be in the future";
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (parsedDate < today) {
+    return "Target date cannot be in the past";
   }
 
   return null;

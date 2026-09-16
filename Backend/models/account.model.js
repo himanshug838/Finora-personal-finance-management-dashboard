@@ -26,6 +26,9 @@ const accountSchema = new mongoose.Schema(
       type: String,
       enum: [
         "bank",
+        "savings",
+        "checking",
+        "credit",
         "credit_card",
         "cash",
         "investment",
