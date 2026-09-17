@@ -214,18 +214,24 @@ const Transactions = () => {
                 />
               </div>
 
-              <div>
+             <div>
                 <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Category</label>
-                <input
-                  type="text"
-                  required
+                <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="e.g. Food, Shopping, Salary, Bills"
                   className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm dark:border-white/10 dark:bg-white/5"
-                />
+                >
+                  <option value="">Select Category</option>
+                  <option value="food">Food</option>
+                  <option value="shopping">Shopping</option>
+                  <option value="salary">Salary</option>
+                  <option value="bills">Bills</option>
+                  <option value="entertainment">Entertainment</option>
+                  <option value="travel">Travel</option>
+                  <option value="health">Health</option>
+                  <option value="education">Education</option>
+                </select>
               </div>
-
               <div>
                 <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Account</label>
                 <select
