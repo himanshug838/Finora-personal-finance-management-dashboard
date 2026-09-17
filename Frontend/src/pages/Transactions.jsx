@@ -13,7 +13,7 @@ const Transactions = () => {
   const [formData, setFormData] = useState({
     type: "expense",
     amount: "",
-    category: "Food",
+    category: "Food", 
     account: "",
     transferAccount: "",
     paymentMethod: "upi",
@@ -232,6 +232,9 @@ const Transactions = () => {
                   <option value="education">Education</option>
                 </select>
               </div>
+
+             
+
               <div>
                 <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Account</label>
                 <select
