@@ -310,6 +310,15 @@ const Navbar = () => {
                     Transactions
                   </NavLink>
 
+                  {/* Budgets */}
+
+                  <NavLink
+                    to="/budgets"
+                    className={navLinkClass}
+                  >
+                    Budgets
+                  </NavLink>
+
                   {/* Investments */}
 
                   <NavLink
@@ -751,6 +760,31 @@ const Navbar = () => {
                       "
                     >
                       💳 Transactions
+                    </Link>
+
+                    {/* ================================================== */}
+                    {/* BUDGETS */}
+                    {/* ================================================== */}
+
+                    <Link
+                      to="/budgets"
+                      onClick={closeMobileMenu}
+                      className="
+                        block
+                        rounded-xl
+                        px-4
+                        py-3
+                        text-sm
+                        font-medium
+                        text-slate-700
+                        transition
+                        hover:bg-black/5
+
+                        dark:text-slate-200
+                        dark:hover:bg-white/5
+                      "
+                    >
+                      🎯 Budgets
                     </Link>
 
                     {/* ================================================== */}

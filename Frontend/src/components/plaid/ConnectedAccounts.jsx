@@ -107,11 +107,11 @@ const ConnectedAccounts = () => {
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
             Connected Banks
           </h2>
 
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Your accounts connected through Plaid
           </p>
         </div>
@@ -121,7 +121,7 @@ const ConnectedAccounts = () => {
 
       {/* Error */}
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+        <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4">
 
           <p className="text-sm text-red-500">
             {error}
@@ -130,7 +130,7 @@ const ConnectedAccounts = () => {
           <button
             type="button"
             onClick={handleRetry}
-            className="mt-3 rounded-lg bg-black px-4 py-2 text-sm text-white transition hover:opacity-80"
+            className="mt-3 rounded-lg bg-violet-600 px-4 py-2 text-sm text-white transition hover:bg-violet-700"
           >
             Try Again
           </button>
@@ -140,13 +140,13 @@ const ConnectedAccounts = () => {
 
       {/* No accounts */}
       {accounts.length === 0 ? (
-        <div className="rounded-2xl border border-dashed p-8 text-center">
+        <div className="rounded-3xl border border-dashed border-slate-300 p-8 text-center dark:border-white/20">
 
-          <p className="text-gray-500">
+          <p className="text-slate-500 dark:text-slate-400">
             No bank accounts connected yet.
           </p>
 
-          <p className="mt-1 text-sm text-gray-400 mb-4">
+          <p className="mt-1 text-sm text-slate-400 mb-4 dark:text-slate-500">
             Connect your bank using Plaid to see it here.
           </p>
 
@@ -161,7 +161,7 @@ const ConnectedAccounts = () => {
           {accounts.map((item) => (
             <div
               key={item._id}
-              className="rounded-2xl border p-5 shadow-sm transition hover:shadow-md"
+              className="rounded-3xl border border-slate-200/80 bg-white/80 p-5 shadow-sm transition hover:shadow-md dark:border-white/10 dark:bg-white/[0.04]"
             >
 
               {/* Bank information */}
@@ -169,16 +169,16 @@ const ConnectedAccounts = () => {
 
                 <div className="min-w-0">
 
-                  <h3 className="truncate font-semibold">
+                  <h3 className="truncate text-base font-bold text-slate-900 dark:text-white">
                     {item.institutionName ||
                       "Connected Bank"}
                   </h3>
 
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
 
                     Status:{" "}
 
-                    <span className="capitalize">
+                    <span className="font-semibold capitalize text-emerald-500">
                       {item.status || "active"}
                     </span>
 
@@ -192,7 +192,7 @@ const ConnectedAccounts = () => {
                   onClick={() =>
                     handleDisconnect(item._id)
                   }
-                  className="shrink-0 rounded-lg px-3 py-2 text-sm text-red-500 transition hover:bg-red-50"
+                  className="shrink-0 rounded-xl px-3 py-2 text-xs font-semibold text-red-500 transition hover:bg-red-500/10"
                 >
                   Disconnect
                 </button>
@@ -200,13 +200,13 @@ const ConnectedAccounts = () => {
               </div>
 
               {/* Sync information */}
-              <div className="mt-4 border-t pt-4">
+              <div className="mt-4 border-t border-slate-100 pt-4 dark:border-white/10">
 
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Last synced
                 </p>
 
-                <p className="mt-1 text-sm">
+                <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
 
                   {item.lastSyncedAt
                     ? new Date(
