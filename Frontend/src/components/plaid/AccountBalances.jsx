@@ -127,24 +127,24 @@ const AccountBalances = () => {
 
       {/* Header */}
       <div>
-        <h2 className="text-xl font-semibold">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">
           Connected Accounts
         </h2>
 
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Bank accounts and current balances
         </p>
       </div>
 
       {/* Empty state */}
       {accounts.length === 0 ? (
-        <div className="rounded-2xl border border-dashed p-8 text-center">
+        <div className="rounded-3xl border border-dashed border-slate-300 p-8 text-center dark:border-white/20">
 
-          <p className="text-gray-500">
+          <p className="text-slate-500 dark:text-slate-400">
             No accounts found.
           </p>
 
-          <p className="mt-1 text-sm text-gray-400">
+          <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
             Connect a bank account or add one manually.
           </p>
 
@@ -155,7 +155,7 @@ const AccountBalances = () => {
           {accounts.map((account) => (
             <div
               key={account._id}
-              className="rounded-2xl border p-5 shadow-sm transition hover:shadow-md"
+              className="rounded-3xl border border-slate-200/80 bg-white/80 p-5 shadow-sm transition hover:shadow-md dark:border-white/10 dark:bg-white/[0.04]"
             >
 
               {/* Account information */}
@@ -163,17 +163,17 @@ const AccountBalances = () => {
 
                 <div className="min-w-0">
 
-                  <p className="truncate text-sm text-gray-500">
+                  <p className="truncate text-xs font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400">
                     {account.institutionName || "Bank"}
                   </p>
 
-                  <h3 className="truncate font-semibold">
+                  <h3 className="truncate text-base font-bold text-slate-900 dark:text-white">
                     {account.accountName}
                   </h3>
 
                 </div>
 
-                <span className="shrink-0 rounded-full bg-gray-100 px-3 py-1 text-xs capitalize">
+                <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700 dark:bg-white/10 dark:text-slate-300">
                   {account.accountType}
                 </span>
 
@@ -182,9 +182,9 @@ const AccountBalances = () => {
               {/* Balance */}
               <div className="mt-5">
 
-                <p className="text-2xl font-bold">
+                <p className="text-2xl font-black text-slate-900 dark:text-white">
 
-                  {account.currency || "INR"}{" "}
+                  ₹{" "}
 
                   {Number(
                     account.balance || 0
@@ -198,11 +198,11 @@ const AccountBalances = () => {
               </div>
 
               {/* Source */}
-              <div className="mt-3 text-xs text-gray-500">
+              <div className="mt-3 text-xs text-slate-500 dark:text-slate-400">
 
                 Source:{" "}
 
-                <span className="font-medium">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">
                   {account.source === "plaid"
                     ? "Plaid"
                     : "Manual"}

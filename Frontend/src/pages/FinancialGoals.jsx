@@ -16,6 +16,29 @@ import GoalSummary from "../components/goals/GoalSummary.jsx";
 import GoalForm from "../components/goals/GoalForm.jsx";
 import AddMoneyModal from "../components/goals/AddMoneyModal.jsx";
 import DeleteGoalModal from "../components/goals/DeleteGoalModal.jsx";
+import CustomSelect from "../components/CustomSelect.jsx";
+
+const STATUS_OPTIONS = [
+  { value: "", label: "All Status" },
+  { value: "active", label: "Active" },
+  { value: "completed", label: "Completed" },
+  { value: "paused", label: "Paused" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+const CATEGORY_OPTIONS = [
+  { value: "", label: "All Categories" },
+  { value: "emergency_fund", label: "Emergency Fund" },
+  { value: "travel", label: "Travel" },
+  { value: "vehicle", label: "Vehicle" },
+  { value: "home", label: "Home" },
+  { value: "education", label: "Education" },
+  { value: "wedding", label: "Wedding" },
+  { value: "retirement", label: "Retirement" },
+  { value: "investment", label: "Investment" },
+  { value: "shopping", label: "Shopping" },
+  { value: "other", label: "Other" },
+];
 
 const FinancialGoals = () => {
 
@@ -619,17 +642,17 @@ const FinancialGoals = () => {
 
                 <div
                     className="
+                        relative z-20
                         mt-8
                         rounded-3xl
                         border
                         border-gray-200/70
-                        bg-white/60
+                        bg-white/90
                         p-4
                         shadow-lg
                         shadow-gray-200/20
-                        backdrop-blur-2xl
                         dark:border-white/10
-                        dark:bg-white/[0.04]
+                        dark:bg-slate-900/90
                         dark:shadow-black/10
                     "
                 >
@@ -699,123 +722,25 @@ const FinancialGoals = () => {
 
                         {/* Status */}
 
-                        <select
-                            value={statusFilter}
-                            onChange={(event) =>
-                                setStatusFilter(
-                                    event.target.value
-                                )
-                            }
-                            className="
-                                rounded-2xl
-                                border
-                                border-gray-200
-                                bg-white/70
-                                px-4
-                                py-3
-                                text-sm
-                                outline-none
-                                transition
-                                focus:border-blue-500
-                                dark:border-white/10
-                                dark:bg-white/5
-                                dark:text-white
-                            "
-                        >
-
-                            <option value="">
-                                All Status
-                            </option>
-
-                            <option value="active">
-                                Active
-                            </option>
-
-                            <option value="completed">
-                                Completed
-                            </option>
-
-                            <option value="paused">
-                                Paused
-                            </option>
-
-                            <option value="cancelled">
-                                Cancelled
-                            </option>
-
-                        </select>
+                        <div className="w-full sm:w-48">
+                            <CustomSelect
+                                value={statusFilter}
+                                onChange={(val) => setStatusFilter(val)}
+                                options={STATUS_OPTIONS}
+                                placeholder="All Status"
+                            />
+                        </div>
 
                         {/* Category */}
 
-                        <select
-                            value={categoryFilter}
-                            onChange={(event) =>
-                                setCategoryFilter(
-                                    event.target.value
-                                )
-                            }
-                            className="
-                                rounded-2xl
-                                border
-                                border-gray-200
-                                bg-white/70
-                                px-4
-                                py-3
-                                text-sm
-                                outline-none
-                                transition
-                                focus:border-blue-500
-                                dark:border-white/10
-                                dark:bg-white/5
-                                dark:text-white
-                            "
-                        >
-
-                            <option value="">
-                                All Categories
-                            </option>
-
-                            <option value="emergency_fund">
-                                Emergency Fund
-                            </option>
-
-                            <option value="travel">
-                                Travel
-                            </option>
-
-                            <option value="vehicle">
-                                Vehicle
-                            </option>
-
-                            <option value="home">
-                                Home
-                            </option>
-
-                            <option value="education">
-                                Education
-                            </option>
-
-                            <option value="wedding">
-                                Wedding
-                            </option>
-
-                            <option value="retirement">
-                                Retirement
-                            </option>
-
-                            <option value="investment">
-                                Investment
-                            </option>
-
-                            <option value="shopping">
-                                Shopping
-                            </option>
-
-                            <option value="other">
-                                Other
-                            </option>
-
-                        </select>
+                        <div className="w-full sm:w-56">
+                            <CustomSelect
+                                value={categoryFilter}
+                                onChange={(val) => setCategoryFilter(val)}
+                                options={CATEGORY_OPTIONS}
+                                placeholder="All Categories"
+                            />
+                        </div>
 
                         {/* Clear Filters */}
 
@@ -965,17 +890,17 @@ const FinancialGoals = () => {
 
                         <div
                             className="
+                                relative z-10
                                 rounded-3xl
                                 border
                                 border-dashed
                                 border-gray-300
-                                bg-white/50
+                                bg-white/80
                                 px-6
                                 py-16
                                 text-center
-                                backdrop-blur-xl
                                 dark:border-white/10
-                                dark:bg-white/[0.03]
+                                dark:bg-slate-900/40
                             "
                         >
 

@@ -40,6 +40,20 @@ export const createTransaction = async (transactionData) => {
   return data.transaction || data.data;
 };
 
+export const updateTransaction = async (id, transactionData) => {
+  const response = await fetch(`${API_URL}/transactions/${id}`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(transactionData),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to update transaction.");
+  }
+  return data.transaction || data.data;
+};
+
 export const deleteTransaction = async (id) => {
   const response = await fetch(`${API_URL}/transactions/${id}`, {
     method: "DELETE",
