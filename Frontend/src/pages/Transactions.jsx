@@ -325,6 +325,42 @@ const Transactions = () => {
                       }))
                 }
               />
+             <div>
+                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Category</label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm dark:border-white/10 dark:bg-white/5"
+                >
+                  <option value="">Select Category</option>
+                  <option value="food">Food</option>
+                  <option value="shopping">Shopping</option>
+                  <option value="salary">Salary</option>
+                  <option value="bills">Bills</option>
+                  <option value="entertainment">Entertainment</option>
+                  <option value="travel">Travel</option>
+                  <option value="health">Health</option>
+                  <option value="education">Education</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Account</label>
+                <select
+                  value={formData.account}
+                  onChange={(e) => setFormData({ ...formData, account: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm dark:border-white/10 dark:bg-white/5"
+                >
+                  {accounts.length === 0 ? (
+                    <option value="">No Accounts (Will auto-select default)</option>
+                  ) : (
+                    accounts.map((acc) => (
+                      <option key={acc._id} value={acc._id}>
+                        {acc.accountName} ({acc.institutionName || "Bank"}) - ₹{acc.balance}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
 
               {formData.type === "transfer" && (
                 <CustomSelect
