@@ -9,6 +9,7 @@ import FinancialGoals from "./pages/FinancialGoals.jsx";
 import Accounts from "./pages/Accounts.jsx";
 import Transactions from "./pages/Transactions.jsx";
 import Investments from "./pages/Investments.jsx";
+import Budgets from "./pages/Budgets.jsx";
 
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Footer from "./components/Footer.jsx";
@@ -31,6 +32,7 @@ function App() {
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/investments" element={<Investments />} />
+            <Route path="/budgets" element={<Budgets />} />
           </Route>
 
           {/* Fallback Catch-all Route */}

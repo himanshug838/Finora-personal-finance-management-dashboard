@@ -5,6 +5,7 @@ import Account from "../models/account.model.js";
 
 import asyncHandler from "../utils/asyncHandler.util.js";
 import ApiError from "../utils/apiError.util.js";
+import autoCategorize from "../utils/categoryResolver.util.js";
 
 
 // ======================================================
@@ -280,6 +281,8 @@ const createTransaction = asyncHandler(
         }
       }
 
+      const resolvedCategory = autoCategorize(merchant, description, category);
+
       let transaction;
       if (session) {
         const created = await Transaction.create([{
@@ -288,7 +291,7 @@ const createTransaction = asyncHandler(
           transferAccount: type === "transfer" ? destAccId : null,
           type,
           amount: Number(amount),
-          category: category.toLowerCase(),
+          category: resolvedCategory,
           description,
           merchant,
           paymentMethod,
@@ -304,7 +307,7 @@ const createTransaction = asyncHandler(
           transferAccount: type === "transfer" ? destAccId : null,
           type,
           amount: Number(amount),
-          category: category.toLowerCase(),
+          category: resolvedCategory,
           description,
           merchant,
           paymentMethod,
@@ -663,11 +666,15 @@ const updateTransaction =
         newTransferAccount = null;
       }
 
+      const finalMerchant = merchant !== undefined ? merchant : transaction.merchant;
+      const finalDescription = description !== undefined ? description : transaction.description;
+      const resolvedCategory = autoCategorize(finalMerchant, finalDescription, newCategory);
+
       transaction.account = newAccount;
       transaction.transferAccount = newTransferAccount;
       transaction.type = newType;
       transaction.amount = newAmount;
-      transaction.category = newCategory.toLowerCase();
+      transaction.category = resolvedCategory;
 
       if (description !== undefined) {
         transaction.description = description;

@@ -1,7 +1,44 @@
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar.jsx";
-import { getTransactions, createTransaction, deleteTransaction } from "../services/transactionsApi.js";
+import {
+  getTransactions,
+  createTransaction,
+  updateTransaction,
+  deleteTransaction,
+} from "../services/transactionsApi.js";
 import { getAccounts } from "../services/accountsApi.js";
+import CustomSelect from "../components/CustomSelect.jsx";
+
+const CATEGORY_LIST = [
+  { value: "", label: "Select Category" },
+  { value: "food", label: "Food" },
+  { value: "shopping", label: "Shopping" },
+  { value: "salary", label: "Salary" },
+  { value: "bills", label: "Bills" },
+  { value: "entertainment", label: "Entertainment" },
+  { value: "travel", label: "Travel" },
+  { value: "health", label: "Health" },
+  { value: "education", label: "Education" },
+  { value: "other", label: "Other" },
+];
+
+const CATEGORY_ICONS = {
+  food: "🍔",
+  shopping: "🛍️",
+  salary: "💵",
+  bills: "💡",
+  entertainment: "🎬",
+  travel: "✈️",
+  health: "🏥",
+  education: "🎓",
+  other: "📦",
+};
+
+const getCategoryIcon = (cat) => {
+  if (!cat) return "📦";
+  const key = String(cat).toLowerCase();
+  return CATEGORY_ICONS[key] || "🏷️";
+};
 
 const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
@@ -9,11 +46,12 @@ const Transactions = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState(null);
 
   const [formData, setFormData] = useState({
     type: "expense",
     amount: "",
-    category: "Food",
+    category: "",
     account: "",
     transferAccount: "",
     paymentMethod: "upi",
@@ -46,6 +84,49 @@ const Transactions = () => {
     loadData();
   }, []);
 
+  const handleTypeChange = (newType) => {
+    setFormData((prev) => ({
+      ...prev,
+      type: newType,
+    }));
+  };
+
+  const resetForm = () => {
+    setEditingTransaction(null);
+    setFormData({
+      type: "expense",
+      amount: "",
+      category: "",
+      account: accounts[0]?._id || "",
+      transferAccount: "",
+      paymentMethod: "upi",
+      date: new Date().toISOString().split("T")[0],
+      description: "",
+      notes: "",
+    });
+  };
+
+  const handleOpenAddModal = () => {
+    resetForm();
+    setShowModal(true);
+  };
+
+  const handleOpenEditModal = (tx) => {
+    setEditingTransaction(tx);
+    setFormData({
+      type: tx.type || "expense",
+      amount: tx.amount || "",
+      category: tx.category || "",
+      account: typeof tx.account === "object" ? tx.account._id : tx.account || "",
+      transferAccount: typeof tx.transferAccount === "object" ? tx.transferAccount?._id : tx.transferAccount || "",
+      paymentMethod: tx.paymentMethod || "upi",
+      date: tx.date ? new Date(tx.date).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+      description: tx.description || "",
+      notes: tx.notes || "",
+    });
+    setShowModal(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -57,26 +138,23 @@ const Transactions = () => {
         return;
       }
 
-      await createTransaction({
+      const payload = {
         ...formData,
+        category: formData.category || "other",
         amount: Number(formData.amount) || 0,
-      });
+      };
+
+      if (editingTransaction) {
+        await updateTransaction(editingTransaction._id, payload);
+      } else {
+        await createTransaction(payload);
+      }
 
       setShowModal(false);
-      setFormData({
-        type: "expense",
-        amount: "",
-        category: "Food",
-        account: accounts[0]?._id || "",
-        transferAccount: "",
-        paymentMethod: "upi",
-        date: new Date().toISOString().split("T")[0],
-        description: "",
-        notes: "",
-      });
+      resetForm();
       loadData();
     } catch (err) {
-      alert(err.message || "Failed to log transaction.");
+      alert(err.message || "Failed to save transaction.");
     }
   };
 
@@ -100,12 +178,12 @@ const Transactions = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Transactions</h1>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              View, spend, and manage your income, expenses, and transfer history.
+              View, spend, edit, and manage your income, expenses, and transfer history.
             </p>
           </div>
 
           <button
-            onClick={() => setShowModal(true)}
+            onClick={handleOpenAddModal}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-violet-700"
           >
             + Add Transaction
@@ -125,7 +203,7 @@ const Transactions = () => {
             <p className="text-lg font-semibold text-slate-700 dark:text-slate-200">No transactions recorded.</p>
             <p className="mt-1 text-sm text-slate-400 mb-6">Transactions will appear here as you log income or expenses.</p>
             <button
-              onClick={() => setShowModal(true)}
+              onClick={handleOpenAddModal}
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-violet-700"
             >
               + Add Transaction Now
@@ -141,7 +219,7 @@ const Transactions = () => {
                   <th className="px-6 py-4">Account</th>
                   <th className="px-6 py-4">Amount</th>
                   <th className="px-6 py-4">Date</th>
-                  <th className="px-6 py-4 text-right">Action</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-white/5">
@@ -158,7 +236,12 @@ const Transactions = () => {
                         {tx.type}
                       </span>
                     </td>
-                    <td className="px-6 py-4 font-medium capitalize">{tx.category || "General"}</td>
+                    <td className="px-6 py-4 font-medium capitalize">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{getCategoryIcon(tx.category)}</span>
+                        <span>{tx.category || "General"}</span>
+                      </div>
+                    </td>
                     <td className="px-6 py-4 text-xs text-slate-500 dark:text-slate-400">
                       {tx.account?.accountName || "Main Account"}
                     </td>
@@ -168,10 +251,16 @@ const Transactions = () => {
                     <td className="px-6 py-4 text-slate-400">
                       {tx.date ? new Date(tx.date).toLocaleDateString() : "-"}
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right space-x-3">
+                      <button
+                        onClick={() => handleOpenEditModal(tx)}
+                        className="text-xs font-semibold text-violet-600 hover:text-violet-800 dark:text-violet-400 dark:hover:text-violet-300"
+                      >
+                        Edit
+                      </button>
                       <button
                         onClick={() => handleDelete(tx._id)}
-                        className="text-xs text-red-400 hover:text-red-600"
+                        className="text-xs font-semibold text-red-400 hover:text-red-600"
                       >
                         Delete
                       </button>
@@ -185,35 +274,57 @@ const Transactions = () => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xl dark:border-white/10 dark:bg-slate-900">
-            <h2 className="text-xl font-bold">Add Transaction</h2>
-            <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Transaction Type</label>
-                <select
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm dark:border-white/10 dark:bg-white/5"
-                >
-                  <option value="expense">Expense (Spend)</option>
-                  <option value="income">Income (Deposit)</option>
-                  <option value="transfer">Transfer</option>
-                </select>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 sm:p-6 backdrop-blur-sm pt-8 sm:pt-14 pb-48">
+          <div className="relative my-auto w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xl dark:border-white/10 dark:bg-slate-900">
+            <h2 className="text-xl font-bold">
+              {editingTransaction ? "Edit Transaction" : "Add Transaction"}
+            </h2>
+            <form onSubmit={handleSubmit} className="mt-4 space-y-4 pb-8">
+              <CustomSelect
+                label="Transaction Type"
+                value={formData.type}
+                onChange={(val) => handleTypeChange(val)}
+                options={[
+                  { value: "expense", label: "Expense (Spend)" },
+                  { value: "income", label: "Income (Deposit)" },
+                  { value: "transfer", label: "Transfer" },
+                ]}
+              />
 
               <div>
                 <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Amount (₹)</label>
                 <input
                   type="number"
                   required
+                  min="0.01"
+                  step="any"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                   placeholder="e.g. 500"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm dark:border-white/10 dark:bg-white/5"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white"
                 />
               </div>
 
+              <CustomSelect
+                label="Category"
+                value={formData.category}
+                onChange={(val) => setFormData({ ...formData, category: val })}
+                options={CATEGORY_LIST}
+              />
+
+              <CustomSelect
+                label="Account"
+                value={formData.account}
+                onChange={(val) => setFormData({ ...formData, account: val })}
+                options={
+                  accounts.length === 0
+                    ? [{ value: "", label: "No Accounts (Will auto-select default)" }]
+                    : accounts.map((acc) => ({
+                        value: acc._id,
+                        label: `${acc.accountName} (${acc.institutionName || "Bank"}) - ₹${acc.balance}`,
+                      }))
+                }
+              />
              <div>
                 <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Category</label>
                 <select
@@ -252,40 +363,35 @@ const Transactions = () => {
               </div>
 
               {formData.type === "transfer" && (
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Destination Account</label>
-                  <select
-                    value={formData.transferAccount}
-                    onChange={(e) => setFormData({ ...formData, transferAccount: e.target.value })}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm dark:border-white/10 dark:bg-white/5"
-                  >
-                    <option value="">Select Destination Account</option>
-                    {accounts.map((acc) => (
-                      <option key={acc._id} value={acc._id}>
-                        {acc.accountName} ({acc.institutionName || "Bank"})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <CustomSelect
+                  label="Destination Account"
+                  value={formData.transferAccount}
+                  onChange={(val) => setFormData({ ...formData, transferAccount: val })}
+                  options={[
+                    { value: "", label: "Select Destination Account" },
+                    ...accounts.map((acc) => ({
+                      value: acc._id,
+                      label: `${acc.accountName} (${acc.institutionName || "Bank"})`,
+                    })),
+                  ]}
+                />
               )}
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Payment Method</label>
-                  <select
-                    value={formData.paymentMethod}
-                    onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm dark:border-white/10 dark:bg-white/5"
-                  >
-                    <option value="upi">UPI</option>
-                    <option value="cash">Cash</option>
-                    <option value="debit_card">Debit Card</option>
-                    <option value="credit_card">Credit Card</option>
-                    <option value="bank_transfer">Bank Transfer</option>
-                    <option value="net_banking">Net Banking</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
+                <CustomSelect
+                  label="Payment Method"
+                  value={formData.paymentMethod}
+                  onChange={(val) => setFormData({ ...formData, paymentMethod: val })}
+                  options={[
+                    { value: "upi", label: "UPI" },
+                    { value: "cash", label: "Cash" },
+                    { value: "debit_card", label: "Debit Card" },
+                    { value: "credit_card", label: "Credit Card" },
+                    { value: "bank_transfer", label: "Bank Transfer" },
+                    { value: "net_banking", label: "Net Banking" },
+                    { value: "other", label: "Other" },
+                  ]}
+                />
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Date</label>
@@ -294,26 +400,29 @@ const Transactions = () => {
                     required
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm dark:border-white/10 dark:bg-white/5"
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Description (Optional)</label>
+                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Description / Merchant (Optional)</label>
                 <input
                   type="text"
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="e.g. Dinner with friends"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm dark:border-white/10 dark:bg-white/5"
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value, merchant: e.target.value })}
+                  placeholder="e.g. Swiggy order or Amazon"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white"
                 />
               </div>
 
               <div className="mt-6 flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    resetForm();
+                  }}
                   className="rounded-xl px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5"
                 >
                   Cancel
@@ -322,7 +431,7 @@ const Transactions = () => {
                   type="submit"
                   className="rounded-xl bg-violet-600 px-5 py-2 text-sm font-semibold text-white hover:bg-violet-700"
                 >
-                  Save Transaction
+                  {editingTransaction ? "Update Transaction" : "Save Transaction"}
                 </button>
               </div>
             </form>

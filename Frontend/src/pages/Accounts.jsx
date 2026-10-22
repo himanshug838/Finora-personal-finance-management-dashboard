@@ -152,8 +152,8 @@ const Accounts = () => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xl dark:border-white/10 dark:bg-slate-900">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 sm:p-6 backdrop-blur-sm pt-8 sm:pt-14 pb-48">
+          <div className="relative my-auto w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xl dark:border-white/10 dark:bg-slate-900">
             <h2 className="text-xl font-bold">Add New Account</h2>
 
             {modalError && (
@@ -162,7 +162,7 @@ const Accounts = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+            <form onSubmit={handleSubmit} className="mt-4 space-y-4 pb-8">
               <div>
                 <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Account Name</label>
                 <input
@@ -171,7 +171,7 @@ const Accounts = () => {
                   value={formData.accountName}
                   onChange={(e) => setFormData({ ...formData, accountName: e.target.value })}
                   placeholder="e.g. HDFC Savings"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm dark:border-white/10 dark:bg-white/5"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white"
                 />
               </div>
 
@@ -182,7 +182,7 @@ const Accounts = () => {
                   value={formData.institutionName}
                   onChange={(e) => setFormData({ ...formData, institutionName: e.target.value })}
                   placeholder="e.g. HDFC Bank"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm dark:border-white/10 dark:bg-white/5"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white"
                 />
               </div>
 
@@ -191,16 +191,16 @@ const Accounts = () => {
                 <select
                   value={formData.accountType}
                   onChange={(e) => setFormData({ ...formData, accountType: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm dark:border-white/10 dark:bg-white/5"
+                  className="mt-1 w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white"
                 >
-                  <option value="bank">Bank Account</option>
-                  <option value="savings">Savings Account</option>
-                  <option value="checking">Checking Account</option>
-                  <option value="credit_card">Credit Card</option>
-                  <option value="investment">Investment Account</option>
-                  <option value="cash">Cash Wallet</option>
-                  <option value="loan">Loan / Mortgage</option>
-                  <option value="other">Other</option>
+                  <option value="bank" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">Bank Account</option>
+                  <option value="savings" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">Savings Account</option>
+                  <option value="checking" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">Checking Account</option>
+                  <option value="credit_card" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">Credit Card</option>
+                  <option value="investment" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">Investment Account</option>
+                  <option value="cash" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">Cash Wallet</option>
+                  <option value="loan" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">Loan / Mortgage</option>
+                  <option value="other" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">Other</option>
                 </select>
               </div>
 
@@ -211,7 +211,7 @@ const Accounts = () => {
                   value={formData.balance}
                   onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
                   placeholder="0"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm dark:border-white/10 dark:bg-white/5"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white"
                 />
               </div>
 

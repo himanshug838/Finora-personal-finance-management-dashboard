@@ -142,10 +142,10 @@ const Investments = () => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xl dark:border-white/10 dark:bg-slate-900">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4 sm:p-6 backdrop-blur-sm pt-8 sm:pt-14 pb-48">
+          <div className="relative my-auto w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xl dark:border-white/10 dark:bg-slate-900">
             <h2 className="text-xl font-bold">Add Investment Holding</h2>
-            <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+            <form onSubmit={handleSubmit} className="mt-4 space-y-4 pb-8">
               <div>
                 <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Asset Name</label>
                 <input
@@ -154,7 +154,7 @@ const Investments = () => {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g. Nifty 50 Index Fund"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm dark:border-white/10 dark:bg-white/5"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white"
                 />
               </div>
 
@@ -165,7 +165,7 @@ const Investments = () => {
                   value={formData.symbol}
                   onChange={(e) => setFormData({ ...formData, symbol: e.target.value })}
                   placeholder="e.g. NIFTY50"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm dark:border-white/10 dark:bg-white/5"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white"
                 />
               </div>
 
@@ -174,13 +174,13 @@ const Investments = () => {
                 <select
                   value={formData.assetType}
                   onChange={(e) => setFormData({ ...formData, assetType: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm dark:border-white/10 dark:bg-white/5"
+                  className="mt-1 w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white"
                 >
-                  <option value="stocks">Stocks</option>
-                  <option value="mutual_funds">Mutual Funds</option>
-                  <option value="crypto">Cryptocurrency</option>
-                  <option value="bonds">Bonds</option>
-                  <option value="real_estate">Real Estate</option>
+                  <option value="stocks" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">Stocks</option>
+                  <option value="mutual_funds" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">Mutual Funds</option>
+                  <option value="crypto" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">Cryptocurrency</option>
+                  <option value="bonds" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">Bonds</option>
+                  <option value="real_estate" className="bg-white text-slate-900 dark:bg-slate-800 dark:text-white">Real Estate</option>
                 </select>
               </div>
 
@@ -193,7 +193,7 @@ const Investments = () => {
                     value={formData.quantity}
                     onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                     placeholder="1"
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm dark:border-white/10 dark:bg-white/5"
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white"
                   />
                 </div>
                 <div>
@@ -204,7 +204,7 @@ const Investments = () => {
                     value={formData.buyPrice}
                     onChange={(e) => setFormData({ ...formData, buyPrice: e.target.value })}
                     placeholder="1000"
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm dark:border-white/10 dark:bg-white/5"
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 dark:border-white/10 dark:bg-slate-800 dark:text-white"
                   />
                 </div>
               </div>

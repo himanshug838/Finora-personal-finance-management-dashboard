@@ -231,7 +231,7 @@ const Footer = () => {
                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium dark:border-white/10 dark:bg-slate-900 dark:text-white"
                     >
                       {Object.keys(RATES).map((curr) => (
-                        <option key={curr} value={curr}>
+                        <option key={curr} value={curr} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">
                           {curr}
                         </option>
                       ))}
@@ -247,7 +247,7 @@ const Footer = () => {
                       className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium dark:border-white/10 dark:bg-slate-900 dark:text-white"
                     >
                       {Object.keys(RATES).map((curr) => (
-                        <option key={curr} value={curr}>
+                        <option key={curr} value={curr} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">
                           {curr}
                         </option>
                       ))}
